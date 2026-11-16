@@ -47,22 +47,37 @@
       transform: scale(0.96);
     }
 
-    /* 아이폰 사파리 시간/날짜 입력창 크기 어긋남 방지 */
+    /* 아이폰 사파리/모바일 시간/날짜 입력창 크기 및 세로 가운데 정렬 */
     input[type="time"],
     input[type="date"] {
-      display: block;
+      display: flex;
+      align-items: center;
       width: 100%;
       max-width: 100%;
       min-width: 0;
       height: 42px;
+      line-height: 42px;
+      padding-top: 0;
+      padding-bottom: 0;
       -webkit-appearance: none;
       appearance: none;
       box-sizing: border-box;
     }
     input[type="time"]::-webkit-date-and-time-value,
     input[type="date"]::-webkit-date-and-time-value {
-      text-align: left;
-      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      margin: 0 auto;
+    }
+    input[type="time"]::-webkit-datetime-edit,
+    input[type="date"]::-webkit-datetime-edit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
   </style>
 </head>
@@ -212,7 +227,7 @@
       <section class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-purple-100 card-shadow space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="font-cute text-xl text-purple-700 flex items-center gap-2">
-            <span>🎒 로키 & 옐로나이프 준비물</span>
+            <span>🧤 캐나다 여행 준비물</span>
           </h3>
           <span id="packPercent" class="text-xs font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-full">0%</span>
         </div>
@@ -276,8 +291,8 @@
   </main>
 
   <!-- Add/Edit Schedule Modal -->
-  <div id="scheduleModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-amber-200 shadow-2xl transform transition-all overflow-hidden">
+  <div id="scheduleModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border-2 border-amber-200 shadow-2xl transform transition-all overflow-hidden my-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 id="modalTitle" class="font-cute text-2xl text-stone-800">새 일정 추가하기 ✨</h3>
         <button onclick="closeScheduleModal()" class="p-1.5 rounded-full hover:bg-stone-100 text-stone-400">
@@ -288,28 +303,44 @@
       <form id="scheduleForm" onsubmit="saveSchedule(event)" class="space-y-3.5">
         <input type="hidden" id="editItemId" />
 
-        <!-- Category / Icon Selector -->
+        <!-- Category / Icon Selector (모바일 보기 편하게 4열 배치) -->
         <div>
           <label class="block text-xs font-bold text-stone-500 mb-1.5">카테고리 아이콘</label>
-          <div class="grid grid-cols-7 gap-1.5" id="iconSelector">
-            <button type="button" data-icon="✈️" class="icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50">✈️</button>
-            <button type="button" data-icon="📍" class="icon-btn p-2 text-lg rounded-xl border-2 border-amber-400 bg-amber-50">📍</button>
-            <button type="button" data-icon="🍽️" class="icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50">🍽️</button>
-            <button type="button" data-icon="🏔️" class="icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50">🏔️</button>
-            <button type="button" data-icon="🚗" class="icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50">🚗</button>
-            <button type="button" data-icon="☕" class="icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50">☕</button>
-            <button type="button" data-icon="🏨" class="icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50">🏨</button>
+          <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="iconSelector">
+            <button type="button" data-icon="✈️" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">✈️</button>
+            <button type="button" data-icon="📍" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border-2 border-amber-400 bg-amber-50">📍</button>
+            <button type="button" data-icon="🍽️" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">🍽️</button>
+            <button type="button" data-icon="🏔️" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">🏔️</button>
+            <button type="button" data-icon="🚗" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">🚗</button>
+            <button type="button" data-icon="☕" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">☕</button>
+            <button type="button" data-icon="🏨" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">🏨</button>
           </div>
         </div>
 
+        <!-- 시작 시간 & 종료 시간 -->
         <div class="grid grid-cols-2 gap-3">
           <div class="min-w-0">
-            <label class="block text-xs font-bold text-stone-500 mb-1">시간</label>
-            <input type="time" id="itemTime" required class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
+            <label class="block text-xs font-bold text-stone-500 mb-1">시작 시간</label>
+            <input type="time" id="itemTime" required class="w-full bg-stone-50 border border-stone-200 rounded-xl px-2 text-sm text-center focus:outline-none focus:border-amber-400" />
           </div>
+          <div class="min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-stone-500">종료 시간 (선택)</label>
+              <button type="button" onclick="document.getElementById('itemEndTime').value=''" class="text-[11px] text-stone-400 hover:text-rose-500">지우기</button>
+            </div>
+            <input type="time" id="itemEndTime" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-2 text-sm text-center focus:outline-none focus:border-amber-400" />
+          </div>
+        </div>
+
+        <!-- 예상 비용 & 실제 비용 -->
+        <div class="grid grid-cols-2 gap-3">
           <div class="min-w-0">
             <label class="block text-xs font-bold text-stone-500 mb-1">예상 비용 (원, 선택)</label>
             <input type="number" id="itemCost" min="0" placeholder="예: 50000" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
+          </div>
+          <div class="min-w-0">
+            <label class="block text-xs font-bold text-stone-500 mb-1">실제 비용 (원, 선택)</label>
+            <input type="number" id="itemActualCost" min="0" placeholder="예: 48000" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
           </div>
         </div>
 
@@ -387,7 +418,7 @@
         </div>
         <div class="min-w-0">
           <label class="block text-xs font-bold text-stone-500 mb-1">출발 날짜</label>
-          <input type="date" id="inputTripDate" required class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
+          <input type="date" id="inputTripDate" required class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm text-center focus:outline-none focus:border-amber-400" />
         </div>
         <div class="flex gap-2 pt-2">
           <button type="button" onclick="closeTripModal()" class="flex-1 py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-600 font-cute text-base transition">취소</button>
@@ -848,7 +879,6 @@
             <span>🛏️</span>
             <span>${escapeHtml(sum.hotel || '미정')}</span>
           </div>
-          ${state.days.length > 1 ? `<button onclick="deleteCurrentDay()" title="이 날 삭제" class="p-1.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
         </div>
       `;
 
@@ -864,15 +894,32 @@
           </div>
         `;
       } else {
-        timelineEl.innerHTML = sortedPlans.map(item => `
+        timelineEl.innerHTML = sortedPlans.map(item => {
+          const timeText = item.endTime ? `${item.time} ~ ${item.endTime}` : item.time;
+          const expectedCost = Number(item.cost) || 0;
+          const actualCost = Number(item.actualCost) || 0;
+
+          let costBadges = '';
+          if (expectedCost > 0 && actualCost > 0) {
+            costBadges = `
+              <span class="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">예상 ${expectedCost.toLocaleString()}원</span>
+              <span class="text-[11px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">실제 ${actualCost.toLocaleString()}원</span>
+            `;
+          } else if (actualCost > 0) {
+            costBadges = `<span class="text-[11px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">실제 ${actualCost.toLocaleString()}원</span>`;
+          } else if (expectedCost > 0) {
+            costBadges = `<span class="text-[11px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">예상 ${expectedCost.toLocaleString()}원</span>`;
+          }
+
+          return `
           <div class="group relative ${item.done ? 'bg-emerald-50/50 border-emerald-200/80 opacity-85' : 'bg-stone-50/80 hover:bg-amber-50/40 border-stone-200/70 hover:border-amber-200'} rounded-2xl p-4 border transition flex items-start gap-3">
             <button onclick="togglePlanDone(${item.id})" title="완료 체크" class="w-11 h-11 rounded-2xl bg-white border border-stone-200/80 flex items-center justify-center text-xl flex-shrink-0 shadow-sm btn-bounce">
               ${item.icon}
             </button>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                <span class="text-xs font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">${escapeHtml(item.time)}</span>
-                ${item.cost > 0 ? `<span class="text-[11px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">${Number(item.cost).toLocaleString()}원</span>` : ''}
+                <span class="text-xs font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">${escapeHtml(timeText)}</span>
+                ${costBadges}
                 ${item.done ? `<span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">완료! ✔</span>` : ''}
               </div>
               <h4 class="font-bold text-stone-800 text-base break-words ${item.done ? 'line-through text-stone-400' : ''}">${escapeHtml(item.title)}</h4>
@@ -890,7 +937,8 @@
               </button>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
       }
 
       lucide.createIcons();
@@ -908,18 +956,6 @@
       renderDayTabs();
       renderSelectedDay();
       showToast(`DAY ${state.days.length} 일정이 추가되었어요!`);
-    }
-
-    function deleteCurrentDay() {
-      if (state.days.length <= 1) return;
-      if (!confirm(`DAY ${state.activeDayIndex + 1} 일정을 모두 삭제할까요?`)) return;
-      state.days.splice(state.activeDayIndex, 1);
-      state.activeDayIndex = Math.max(0, state.activeDayIndex - 1);
-      saveState();
-      renderHeader();
-      renderDayTabs();
-      renderSelectedDay();
-      showToast('해당 일차가 삭제되었어요.');
     }
 
     function togglePlanDone(planId) {
@@ -947,10 +983,10 @@
       let matched = false;
       buttons.forEach(b => {
         if (b.getAttribute('data-icon') === icon) {
-          b.className = 'icon-btn p-2 text-lg rounded-xl border-2 border-amber-400 bg-amber-50';
+          b.className = 'icon-btn h-11 flex items-center justify-center text-xl rounded-xl border-2 border-amber-400 bg-amber-50';
           matched = true;
         } else {
-          b.className = 'icon-btn p-2 text-lg rounded-xl border border-stone-200 hover:bg-stone-50';
+          b.className = 'icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50';
         }
       });
       if (!matched && buttons.length > 0) setSelectedIconUI(buttons[0].getAttribute('data-icon'));
@@ -964,7 +1000,9 @@
         document.getElementById('modalTitle').innerText = '일정 수정하기 ✏️';
         document.getElementById('editItemId').value = item.id;
         document.getElementById('itemTime').value = item.time;
+        document.getElementById('itemEndTime').value = item.endTime || '';
         document.getElementById('itemCost').value = item.cost || '';
+        document.getElementById('itemActualCost').value = item.actualCost || '';
         document.getElementById('itemTitle').value = item.title;
         document.getElementById('itemNote').value = item.note || '';
         setSelectedIconUI(item.icon);
@@ -972,7 +1010,9 @@
         document.getElementById('modalTitle').innerText = '새 일정 추가하기 ✨';
         document.getElementById('editItemId').value = '';
         document.getElementById('itemTime').value = '10:00';
+        document.getElementById('itemEndTime').value = '';
         document.getElementById('itemCost').value = '';
+        document.getElementById('itemActualCost').value = '';
         document.getElementById('itemTitle').value = '';
         document.getElementById('itemNote').value = '';
         setSelectedIconUI('📍');
@@ -991,7 +1031,9 @@
       e.preventDefault();
       const editId = document.getElementById('editItemId').value;
       const time = document.getElementById('itemTime').value;
+      const endTime = document.getElementById('itemEndTime').value || '';
       const cost = Number(document.getElementById('itemCost').value) || 0;
+      const actualCost = Number(document.getElementById('itemActualCost').value) || 0;
       const title = document.getElementById('itemTitle').value.trim();
       const note = document.getElementById('itemNote').value.trim();
       if (!title) return;
@@ -1001,7 +1043,9 @@
         const target = plans.find(i => String(i.id) === String(editId));
         if (target) {
           target.time = time;
+          target.endTime = endTime;
           target.cost = cost;
+          target.actualCost = actualCost;
           target.icon = selectedIcon;
           target.title = title;
           target.note = note;
@@ -1011,7 +1055,9 @@
         plans.push({
           id: Date.now(),
           time,
+          endTime,
           cost,
+          actualCost,
           icon: selectedIcon,
           title,
           note,
