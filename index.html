@@ -66,7 +66,27 @@
     }
   </style>
 </head>
-<body class="text-stone-700 min-h-screen pb-24">
+<body class="text-stone-700 min-h-screen pb-24 auth-locked">
+  <style>
+    .auth-locked > header,
+    .auth-locked > main { display: none !important; }
+  </style>
+
+  <!-- Firebase Login Screen -->
+  <section id="authScreen" class="fixed inset-0 z-[100] flex items-center justify-center p-5"
+    style="background-color:#FFFDF9;background-image:radial-gradient(#F3E8D8 1.5px,transparent 1.5px);background-size:24px 24px;">
+    <div class="w-full max-w-sm rounded-[2rem] border-2 border-amber-100 bg-white p-7 text-center shadow-xl">
+      <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-50 text-4xl">🍁</div>
+      <p class="mb-1 text-xs font-bold tracking-[0.2em] text-amber-600">OUR CANADA HONEYMOON</p>
+      <h1 class="font-cute mb-2 text-2xl text-stone-800">캐나다 신혼여행 플래너</h1>
+      <p class="mb-6 text-sm leading-relaxed text-stone-500">함께 여행 일정을 관리하려면<br>Google 계정으로 로그인해 주세요.</p>
+      <button id="authLoginButton" type="button"
+        class="flex w-full items-center justify-center gap-3 rounded-2xl border border-amber-200 bg-amber-400 px-4 py-3.5 font-bold text-stone-900 shadow-sm transition active:scale-[0.98]">
+        <span class="text-lg">G</span><span>Google 계정으로 로그인</span>
+      </button>
+      <p id="authStatus" class="mt-4 min-h-5 text-xs leading-relaxed text-stone-500">로그인이 필요합니다.</p>
+    </div>
+  </section>
 
   <!-- Top Cute Header Banner -->
   <header class="bg-gradient-to-r from-amber-100 via-orange-100 to-rose-100 border-b-2 border-amber-200/60 sticky top-0 z-30 backdrop-blur-md bg-opacity-90">
@@ -95,6 +115,13 @@
           <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           <span class="hidden sm:inline font-medium">초기화</span>
         </button>
+        <div class="flex items-center gap-1.5">
+          <span id="signedInEmail" class="hidden sm:inline max-w-[130px] truncate text-[10px] text-stone-500"></span>
+          <button id="authLogoutButton" type="button" title="로그아웃"
+            class="p-2.5 rounded-2xl border border-amber-200/80 bg-white/80 text-stone-500 transition btn-bounce hover:bg-white hover:text-rose-500">
+            <i data-lucide="log-out" class="h-4 w-4"></i>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -627,8 +654,39 @@
     }
 
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('로컬 저장을 완료하지 못했습니다.', e);
+      }
+
+      // Firebase 로그인 및 최초 데이터 로드가 끝난 뒤에만 클라우드에 저장합니다.
+      if (typeof window.saveTripStateToCloud === 'function') {
+        window.saveTripStateToCloud(state);
+      }
     }
+
+    // Firebase에서 받은 여행 데이터를 기존 플래너 화면에 반영합니다.
+    window.applyCloudTripState = function (cloudState) {
+      if (!cloudState || !Array.isArray(cloudState.days)) return;
+
+      state = cloudState;
+      selectedTripEmoji = state.tripEmoji || '🍁';
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {}
+
+      renderHeader();
+      renderDayTabs();
+      renderSelectedDay();
+      renderChecklist();
+      renderBudget();
+    };
+
+    window.getCurrentTripState = function () {
+      return state;
+    };
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -1251,43 +1309,153 @@
       lucide.createIcons();
     });
   </script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBSnwFlSLGZnywo1MG7y37C6lteawas85Q",
+    authDomain: "canada-app-f17c5.firebaseapp.com",
+    projectId: "canada-app-f17c5",
+    appId: "1:700174259173:web:b22cf21bc93a42a763950c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  const authScreen = document.getElementById("authScreen");
+  const authStatus = document.getElementById("authStatus");
+  const loginButton = document.getElementById("authLoginButton");
+  const logoutButton = document.getElementById("authLogoutButton");
+  const signedInEmail = document.getElementById("signedInEmail");
+
+  // 두 명이 같은 여행 데이터를 보도록 사용자별 문서가 아닌 공용 문서를 사용합니다.
+  const sharedTripRef = doc(db, "shared", "canadaTrip");
+
+  let currentUser = null;
+  let unsubscribeTrip = null;
+  let cloudReady = false;
+  let saveTimer = null;
+
+  function showLogin(message) {
+    cloudReady = false;
+    document.body.classList.add("auth-locked");
+    authScreen.classList.remove("hidden");
+    authStatus.textContent = message || "로그인이 필요합니다.";
+  }
+
+  function showPlanner() {
+    authScreen.classList.add("hidden");
+    document.body.classList.remove("auth-locked");
+  }
+
+  loginButton.addEventListener("click", async () => {
+    authStatus.textContent = "Google 로그인 창을 여는 중...";
+    loginButton.disabled = true;
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("로그인 오류:", error);
+      authStatus.textContent = "로그인 실패: " + (error.message || error.code);
+    } finally {
+      loginButton.disabled = false;
+    }
+  });
+
+  logoutButton.addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("로그아웃 오류:", error);
+      alert("로그아웃에 실패했습니다. 다시 시도해 주세요.");
+    }
+  });
+
+  // 기존 앱의 saveState()가 호출하면 600ms 후 Firestore에 저장합니다.
+  window.saveTripStateToCloud = (nextState) => {
+    if (!cloudReady || !currentUser) return;
+
+    clearTimeout(saveTimer);
+    const stateCopy = JSON.parse(JSON.stringify(nextState));
+
+    saveTimer = setTimeout(async () => {
+      try {
+        await setDoc(sharedTripRef, {
+          state: stateCopy,
+          updatedAt: serverTimestamp()
+        });
+        authStatus.textContent = currentUser.email + " · 동기화 완료";
+      } catch (error) {
+        console.error("Firestore 저장 오류:", error);
+        authStatus.textContent = "클라우드 저장 실패: " + error.code;
+      }
+    }, 600);
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    unsubscribeTrip?.();
+    unsubscribeTrip = null;
+    cloudReady = false;
+    clearTimeout(saveTimer);
+
+    if (!user) {
+      signedInEmail.textContent = "";
+      showLogin("로그인이 필요합니다.");
+      return;
+    }
+
+    signedInEmail.textContent = user.email || "";
+    authStatus.textContent = "로그인 확인 완료 · 여행 데이터를 불러오는 중...";
+
+    unsubscribeTrip = onSnapshot(
+      sharedTripRef,
+      async (snapshot) => {
+        // 내가 방금 보낸 쓰기 이벤트는 건너뛰고 서버 확정 데이터를 반영합니다.
+        if (snapshot.metadata.hasPendingWrites) return;
+
+        try {
+          if (snapshot.exists() && snapshot.data().state) {
+            window.applyCloudTripState(snapshot.data().state);
+          } else {
+            // 공용 문서가 처음 만들어지는 경우 현재 기기의 저장 데이터를 초기값으로 사용합니다.
+            const initialState = window.getCurrentTripState();
+            await setDoc(sharedTripRef, {
+              state: initialState,
+              updatedAt: serverTimestamp()
+            });
+            return;
+          }
+
+          cloudReady = true;
+          showPlanner();
+          authStatus.textContent = user.email + " · 동기화 완료";
+        } catch (error) {
+          console.error("여행 데이터 초기화 오류:", error);
+          showLogin("데이터 초기화 실패: " + (error.code || error.message));
+        }
+      },
+      (error) => {
+        console.error("Firestore 읽기 오류:", error);
+        cloudReady = false;
+
+        if (error.code === "permission-denied") {
+          showLogin("이 Google 계정은 데이터 접근 권한이 없어요. 허용된 이메일인지 Firebase 보안 규칙을 확인해 주세요.");
+        } else {
+          showLogin("데이터 연결 실패: " + error.code);
+        }
+      }
+    );
+  });
 </script>
+
 </body>
 </html>
