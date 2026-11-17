@@ -44,6 +44,10 @@
     .card-shadow {
       box-shadow: 0 8px 20px -4px rgba(217, 119, 6, 0.08), 0 4px 8px -2px rgba(217, 119, 6, 0.04);
     }
+    /* 빠르게 연속으로 눌러도 '두 번 탭 = 확대'로 인식하지 않도록 (아이폰 탭 씹힘 방지) */
+    button, label, a, input, select {
+      touch-action: manipulation;
+    }
     .btn-bounce:active {
       transform: scale(0.96);
     }
@@ -1102,6 +1106,11 @@
       const timelineEl = document.getElementById('timelineList');
       const sortedPlans = [...day.plans].sort((a, b) => a.time.localeCompare(b.time));
 
+      // 일정이 있을 때만 전체를 하나의 회색 박스로 감싸요
+      timelineEl.className = sortedPlans.length
+        ? 'bg-stone-50/80 border border-stone-200/70 rounded-2xl p-3.5 sm:p-4'
+        : '';
+
       if (sortedPlans.length === 0) {
         timelineEl.innerHTML = `
           <div class="text-center py-10 bg-stone-50/70 rounded-2xl border border-dashed border-stone-200">
@@ -1114,22 +1123,6 @@
         timelineEl.innerHTML = sortedPlans.map((item, i) => {
           const isLast = i === sortedPlans.length - 1;
           const timeText = item.endTime ? `${item.time} ~ ${item.endTime}` : item.time;
-          const currency = item.currency || 'KRW';
-          const expectedCost = Number(item.cost) || 0;
-          const actualCost = Number(item.actualCost) || 0;
-
-          let costBadges = '';
-          if (expectedCost > 0 && actualCost > 0) {
-            costBadges = `
-              <span class="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">예상 ${formatMoney(expectedCost, currency)}</span>
-              <span class="text-[11px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">실제 ${formatMoney(actualCost, currency)}</span>
-            `;
-          } else if (actualCost > 0) {
-            costBadges = `<span class="text-[11px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-md">실제 ${formatMoney(actualCost, currency)}</span>`;
-          } else if (expectedCost > 0) {
-            costBadges = `<span class="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">예상 ${formatMoney(expectedCost, currency)}</span>`;
-          }
-
           // 카드에 보여줄 핵심 정보 한 줄 (편명, 체크인 등)
           const keyInfo = getKeyInfoText(item);
 
@@ -1144,14 +1137,13 @@
             </div>
 
             <!-- 오른쪽: 시간 / 제목 / 내용 / 금액 -->
-            <div class="flex-1 min-w-0 rounded-2xl px-2.5 py-1.5 -mt-0.5 group-hover:bg-amber-50/60 group-active:bg-amber-50 transition ${isLast ? '' : 'mb-3'}">
+            <div class="flex-1 min-w-0 rounded-2xl px-2.5 py-1.5 -mt-0.5 group-hover:bg-white/80 group-active:bg-white transition ${isLast ? '' : 'mb-3'}">
               <div class="flex items-center gap-1.5 flex-wrap mb-1">
                 <span class="text-xs font-bold px-2 py-0.5 rounded-md ${item.done ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100/80'}">${escapeHtml(timeText)}${item.done ? ' · 완료' : ''}</span>
               </div>
               <h4 class="font-bold text-base break-keep break-words ${item.done ? 'line-through text-stone-400' : 'text-stone-800'}">${escapeHtml(item.title)}</h4>
               ${keyInfo ? `<p class="text-xs font-bold mt-0.5 ${item.done ? 'text-stone-400' : 'text-amber-700'} break-keep">${escapeHtml(keyInfo)}</p>` : ''}
               ${item.note ? `<p class="text-sm mt-1 whitespace-pre-line leading-relaxed break-keep break-words line-clamp-2 ${item.done ? 'text-stone-400' : 'text-stone-600'}">${escapeHtml(item.note)}</p>` : ''}
-              ${costBadges ? `<div class="flex items-center gap-1.5 flex-wrap mt-2">${costBadges}</div>` : ''}
             </div>
           </div>
         `;
@@ -1676,6 +1668,17 @@
         `담당자 칩을 누르면 미정 → ${state.members[0]} → ${state.members[1]} → 같이 순서로 바뀌어요.`;
     }
 
+    const OWNER_STYLES = {
+      a: 'bg-sky-100 text-sky-700 border-sky-200',
+      b: 'bg-rose-100 text-rose-600 border-rose-200',
+      both: 'bg-amber-100 text-amber-800 border-amber-200',
+      '': 'bg-white text-stone-400 border-stone-200'
+    };
+
+    function ownerChipClass(owner) {
+      return `flex-shrink-0 min-w-[44px] px-2 py-1 rounded-lg border text-[11px] font-bold text-center select-none btn-bounce ${OWNER_STYLES[owner || ''] || OWNER_STYLES['']}`;
+    }
+
     function setChecklistFilter(key) {
       checklistFilter = key;
       renderChecklist();
@@ -1689,13 +1692,6 @@
       document.getElementById('packPercent').textContent = `${percent}% (${done}/${total})`;
       document.getElementById('packProgressBar').style.width = `${percent}%`;
       renderChecklistFilter();
-
-      const ownerStyles = {
-        a: 'bg-sky-100 text-sky-700 border-sky-200',
-        b: 'bg-rose-100 text-rose-600 border-rose-200',
-        both: 'bg-amber-100 text-amber-800 border-amber-200',
-        '': 'bg-white text-stone-400 border-stone-200'
-      };
 
       const visible = checklistFilter === 'all'
         ? state.checklist
@@ -1713,7 +1709,7 @@
               class="w-4 h-4 accent-purple-500 rounded cursor-pointer flex-shrink-0" />
             <span class="text-sm break-words ${memo.done ? 'line-through text-stone-400' : 'text-stone-700 font-medium'}">${escapeHtml(memo.text)}</span>
           </label>
-          <button onclick="cycleChecklistOwner(${memo.id})" class="flex-shrink-0 px-2 py-0.5 rounded-lg border text-[11px] font-bold btn-bounce ${ownerStyles[memo.owner || '']}">${escapeHtml(ownerLabel(memo.owner || ''))}</button>
+          <button onclick="cycleChecklistOwner(${memo.id})" data-owner-chip="${memo.id}" class="${ownerChipClass(memo.owner)}">${escapeHtml(ownerLabel(memo.owner || ''))}</button>
           <button onclick="deleteChecklistItem(${memo.id})" class="text-stone-400 hover:text-rose-500 p-1 flex-shrink-0">
             <i data-lucide="x" class="w-3.5 h-3.5"></i>
           </button>
@@ -1749,7 +1745,15 @@
       if (!item) return;
       item.owner = order[(order.indexOf(item.owner || '') + 1) % order.length];
       saveState();
-      renderChecklist();
+      // 목록 전체를 다시 그리지 않고 누른 칩만 바로 바꿔요 (깜빡임·버벅임 방지)
+      const chip = document.querySelector(`[data-owner-chip="${id}"]`);
+      if (chip) {
+        chip.className = ownerChipClass(item.owner);
+        chip.textContent = ownerLabel(item.owner);
+        renderChecklistFilter(); // 필터 개수만 갱신 (필터 중이어도 항목이 바로 사라지지 않음)
+      } else {
+        renderChecklist();
+      }
     }
 
     function deleteChecklistItem(id) {
