@@ -851,15 +851,6 @@
       const dateInfo = getDayDateInfo(state.tripDate, idx);
       const sum = day.summary || { region: '미정', hotel: '미정' };
 
-      const badgeColors = {
-        sky: 'bg-sky-100 text-sky-700 border-sky-200',
-        amber: 'bg-amber-100 text-amber-800 border-amber-200',
-        emerald: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        rose: 'bg-rose-100 text-rose-700 border-rose-200',
-        stone: 'bg-stone-100 text-stone-700 border-stone-200'
-      };
-      const badgeClass = badgeColors[day.stayColor] || badgeColors.amber;
-
       document.getElementById('selectedDayHeader').innerHTML = `
         <div>
           <div class="flex items-center gap-2 mb-1 flex-wrap">
@@ -869,12 +860,6 @@
             </span>
           </div>
           <h3 class="font-cute text-2xl text-stone-800">DAY ${idx + 1} 상세 타임라인</h3>
-        </div>
-        <div class="flex items-center gap-2 self-start sm:self-center">
-          <div class="px-3.5 py-1.5 rounded-2xl border ${badgeClass} text-xs font-bold flex items-center gap-1.5">
-            <span>🛏️</span>
-            <span>${escapeHtml(sum.hotel || '미정')}</span>
-          </div>
         </div>
       `;
 
@@ -909,19 +894,19 @@
 
           return `
           <div class="group relative ${item.done ? 'bg-emerald-50/50 border-emerald-200/80 opacity-85' : 'bg-stone-50/80 hover:bg-amber-50/40 border-stone-200/70 hover:border-amber-200'} rounded-2xl p-3.5 sm:p-4 border transition flex items-start gap-3">
-            <!-- 왼쪽 열: 카테고리 아이콘 + 그 아래 완료/수정/삭제 버튼 -->
-            <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
-              <button onclick="togglePlanDone(${item.id})" title="완료 체크" class="w-11 h-11 rounded-2xl bg-white border border-stone-200/80 flex items-center justify-center text-xl shadow-sm btn-bounce">
+            <!-- 왼쪽 열: 카테고리 아이콘 + 그 아래 완료/수정/삭제 버튼 (세로 배치로 폭 최소화) -->
+            <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10">
+              <button onclick="togglePlanDone(${item.id})" title="완료 체크" class="w-10 h-10 rounded-2xl bg-white border border-stone-200/80 flex items-center justify-center text-xl shadow-sm btn-bounce">
                 ${item.icon}
               </button>
-              <div class="flex items-center gap-0.5 bg-white/90 border border-stone-200/70 rounded-xl p-0.5 shadow-xs">
-                <button onclick="togglePlanDone(${item.id})" title="완료" class="p-1 ${item.done ? 'text-emerald-600 bg-emerald-100' : 'text-stone-400 hover:text-emerald-600 hover:bg-stone-50'} rounded-lg transition">
+              <div class="flex flex-col items-center gap-0.5 bg-white/90 border border-stone-200/70 rounded-xl p-0.5 shadow-xs">
+                <button onclick="togglePlanDone(${item.id})" title="완료" class="p-1.5 ${item.done ? 'text-emerald-600 bg-emerald-100' : 'text-stone-400 hover:text-emerald-600 hover:bg-stone-50'} rounded-lg transition">
                   <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openScheduleModal(${item.id})" title="수정" class="p-1 text-stone-400 hover:text-amber-600 hover:bg-stone-50 rounded-lg transition">
+                <button onclick="openScheduleModal(${item.id})" title="수정" class="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-stone-50 rounded-lg transition">
                   <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="deleteSchedule(${item.id})" title="삭제" class="p-1 text-stone-400 hover:text-rose-500 hover:bg-stone-50 rounded-lg transition">
+                <button onclick="deleteSchedule(${item.id})" title="삭제" class="p-1.5 text-stone-400 hover:text-rose-500 hover:bg-stone-50 rounded-lg transition">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -1059,6 +1044,9 @@
     }
 
     function deleteSchedule(id) {
+      const target = state.days[state.activeDayIndex].plans.find(i => i.id === id);
+      if (!target) return;
+      if (!confirm(`'${target.title}' 일정을 삭제할까요?\n삭제하면 되돌릴 수 없어요.`)) return;
       state.days[state.activeDayIndex].plans = state.days[state.activeDayIndex].plans.filter(i => i.id !== id);
       saveState();
       renderSelectedDay();
