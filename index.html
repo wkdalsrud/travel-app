@@ -48,6 +48,18 @@
     button, label, a, input, select {
       touch-action: manipulation;
     }
+    /* 팝업: 팝업 안에서만 스크롤되고, 끝까지 내려도 뒤 화면이 따라 움직이지 않아요 */
+    .modal-overlay {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    body.modal-locked {
+      position: fixed;
+      left: 0;
+      right: 0;
+      overflow: hidden;
+    }
     .btn-bounce:active {
       transform: scale(0.96);
     }
@@ -345,7 +357,7 @@
   </main>
 
   <!-- Add/Edit Schedule Modal -->
-  <div id="scheduleModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+  <div id="scheduleModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 modal-overlay">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border-2 border-amber-200 shadow-2xl transform transition-all overflow-hidden my-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 id="modalTitle" class="font-cute text-2xl text-stone-800">새 일정 추가하기 ✨</h3>
@@ -357,10 +369,10 @@
       <form id="scheduleForm" onsubmit="saveSchedule(event)" class="space-y-3.5">
         <input type="hidden" id="editItemId" />
 
-        <!-- Category / Icon Selector (모바일 보기 편하게 4열 배치) -->
+        <!-- Category / Icon Selector (한 줄 7칸) -->
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-1.5">카테고리 아이콘</label>
-          <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="iconSelector">
+          <label class="flex items-center h-5 text-xs font-bold text-stone-500 mb-1">카테고리 아이콘</label>
+          <div class="grid grid-cols-7 gap-1.5" id="iconSelector">
             <button type="button" data-icon="✈️" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">✈️</button>
             <button type="button" data-icon="📍" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border-2 border-amber-400 bg-amber-50">📍</button>
             <button type="button" data-icon="🍽️" class="icon-btn h-11 flex items-center justify-center text-xl rounded-xl border border-stone-200 hover:bg-stone-50">🍽️</button>
@@ -372,20 +384,22 @@
         </div>
 
         <div class="min-w-0">
-          <label class="block text-xs font-bold text-stone-500 mb-1">일정 제목</label>
+          <label class="flex items-center h-5 text-xs font-bold text-stone-500 mb-1">일정 제목</label>
           <input type="text" id="itemTitle" required placeholder="예: 레이크 루이스 산책" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
         </div>
 
-        <!-- 시작 시간 & 종료 시간 (비용과 통일된 좌측 정렬 + 세로 가운데 정렬) -->
+        <!-- 시작 시간 & 종료 시간 (라벨 높이를 맞춰 입력칸이 나란히 오도록) -->
         <div class="grid grid-cols-2 gap-3">
           <div class="min-w-0">
-            <label id="itemTimeLabel" class="block text-xs font-bold text-stone-500 mb-1">시작 시간</label>
+            <div class="flex items-center h-5 mb-1">
+              <label id="itemTimeLabel" class="text-xs font-bold text-stone-500">시작 시간</label>
+            </div>
             <input type="time" id="itemTime" required class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm text-left focus:outline-none focus:border-amber-400" />
           </div>
           <div class="min-w-0">
-            <div class="flex items-center justify-between mb-1">
-              <label id="itemEndTimeLabel" class="block text-xs font-bold text-stone-500">종료 시간 (선택)</label>
-              <button type="button" onclick="document.getElementById('itemEndTime').value=''" class="text-[11px] text-stone-400 hover:text-rose-500">지우기</button>
+            <div class="flex items-center justify-between h-5 mb-1">
+              <label id="itemEndTimeLabel" class="text-xs font-bold text-stone-500 truncate">종료 시간 (선택)</label>
+              <button type="button" onclick="document.getElementById('itemEndTime').value=''" class="flex-shrink-0 text-[11px] text-stone-400 hover:text-rose-500">지우기</button>
             </div>
             <input type="time" id="itemEndTime" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm text-left focus:outline-none focus:border-amber-400" />
           </div>
@@ -393,46 +407,51 @@
 
         <!-- 카테고리별 상세 항목 (아이콘에 따라 바뀜) -->
         <div id="categoryFieldsBox" class="hidden bg-amber-50/60 rounded-2xl p-3.5 border border-amber-200/70">
-          <span id="categoryFieldsTitle" class="block text-xs font-bold text-amber-800 mb-2">항공 정보</span>
-          <div id="categoryFields" class="grid grid-cols-2 gap-2.5"></div>
+          <span id="categoryFieldsTitle" class="flex items-center h-5 text-xs font-bold text-amber-800 mb-2">항공 정보</span>
+          <div id="categoryFields" class="grid grid-cols-2 gap-x-2.5 gap-y-3"></div>
         </div>
 
-        <!-- 통화 선택 + 예상 비용 & 실제 비용 -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs font-bold text-stone-500">비용 통화</span>
-            <div class="flex bg-stone-100 rounded-xl p-0.5 text-xs font-bold">
+        <!-- 비용 (배경색으로 구분) -->
+        <div class="bg-emerald-50/60 rounded-2xl p-3.5 border border-emerald-200/70">
+          <div class="flex items-center justify-between h-7 mb-2">
+            <span class="text-xs font-bold text-emerald-800">💰 비용 (선택)</span>
+            <div class="flex bg-white/80 border border-emerald-100 rounded-xl p-0.5 text-xs font-bold">
               <button type="button" data-currency="KRW" onclick="setItemCurrency('KRW')" class="currency-btn px-3 py-1 rounded-lg">원</button>
               <button type="button" data-currency="CAD" onclick="setItemCurrency('CAD')" class="currency-btn px-3 py-1 rounded-lg">CAD</button>
             </div>
           </div>
           <input type="hidden" id="itemCurrency" value="KRW" />
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-x-2.5">
             <div class="min-w-0">
-              <label class="block text-xs font-bold text-stone-500 mb-1">예상 비용 <span class="currency-label">(원)</span></label>
-              <input type="number" id="itemCost" min="0" step="any" inputmode="decimal" placeholder="선택" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
+              <label class="flex items-center h-5 text-[11px] font-bold text-stone-500 mb-1">예상 비용&nbsp;<span class="currency-label">(원)</span></label>
+              <input type="number" id="itemCost" min="0" step="any" inputmode="decimal" placeholder="0" class="w-full h-[42px] bg-white border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-emerald-400" />
             </div>
             <div class="min-w-0">
-              <label class="block text-xs font-bold text-stone-500 mb-1">실제 비용 <span class="currency-label">(원)</span></label>
-              <input type="number" id="itemActualCost" min="0" step="any" inputmode="decimal" placeholder="선택" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
+              <label class="flex items-center h-5 text-[11px] font-bold text-stone-500 mb-1">실제 비용&nbsp;<span class="currency-label">(원)</span></label>
+              <input type="number" id="itemActualCost" min="0" step="any" inputmode="decimal" placeholder="0" class="w-full h-[42px] bg-white border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-emerald-400" />
             </div>
           </div>
-          <p id="itemCostPreview" class="text-[11px] text-sky-700 mt-1 min-h-[1em]"></p>
+          <p id="itemCostPreview" class="hidden text-[11px] text-emerald-700 mt-2"></p>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div class="min-w-0">
-            <label class="block text-xs font-bold text-stone-500 mb-1">장소 / 주소 (선택)</label>
+        <!-- 장소·예약처·예약번호 (카테고리에 따라 보이는 칸이 달라요) -->
+        <div id="extraFields" class="grid grid-cols-2 gap-3">
+          <div id="placeWrap" class="min-w-0">
+            <label class="flex items-center h-5 text-xs font-bold text-stone-500 mb-1">장소 / 주소 (선택)</label>
             <input type="text" id="itemPlace" placeholder="예: Lake Louise" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
           </div>
-          <div class="min-w-0">
-            <label class="block text-xs font-bold text-stone-500 mb-1">예약번호 (선택)</label>
+          <div id="bookedViaWrap" class="min-w-0 hidden">
+            <label class="flex items-center h-5 text-xs font-bold text-stone-500 mb-1">예약처 (선택)</label>
+            <input type="text" id="itemBookedVia" placeholder="예: 대한항공 앱" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
+          </div>
+          <div id="bookingRefWrap" class="min-w-0">
+            <label class="flex items-center h-5 text-xs font-bold text-stone-500 mb-1">예약번호 (선택)</label>
             <input type="text" id="itemBookingRef" placeholder="예: YFWKLZ" autocapitalize="characters" class="w-full h-[42px] bg-stone-50 border border-stone-200 rounded-xl px-3 text-sm focus:outline-none focus:border-amber-400" />
           </div>
         </div>
 
         <div class="min-w-0">
-          <label class="block text-xs font-bold text-stone-500 mb-1">상세 메모</label>
+          <label class="flex items-center h-5 text-xs font-bold text-stone-500 mb-1">상세 메모</label>
           <textarea id="itemNote" rows="2" placeholder="준비물, 참고 사항 등 자유롭게 적어주세요!" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400"></textarea>
         </div>
 
@@ -445,7 +464,7 @@
   </div>
 
   <!-- Schedule Detail Modal (일정 카드를 누르면 열림) -->
-  <div id="detailModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto" onclick="if(event.target===this) closeDetailModal()">
+  <div id="detailModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 modal-overlay" onclick="if(event.target===this) closeDetailModal()">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border-2 border-amber-200 shadow-2xl overflow-hidden my-auto">
       <div class="flex items-start justify-between gap-3 mb-3">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -469,7 +488,7 @@
   </div>
 
   <!-- Day Summary Edit Modal -->
-  <div id="summaryModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div id="summaryModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 modal-overlay">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-amber-200 shadow-2xl transform transition-all overflow-hidden">
       <div class="flex items-center justify-between mb-4">
         <h3 id="summaryModalTitle" class="font-cute text-2xl text-stone-800">일차 요약 수정 📌</h3>
@@ -504,7 +523,7 @@
   </div>
 
   <!-- Trip Info Modal -->
-  <div id="tripModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div id="tripModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 modal-overlay">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-amber-200 shadow-2xl transform transition-all overflow-hidden">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-cute text-2xl text-stone-800">여행 정보 꾸미기 🍁</h3>
@@ -543,7 +562,7 @@
   </div>
 
   <!-- Font Settings Modal (IndexedDB Local Font) -->
-  <div id="fontModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div id="fontModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 modal-overlay">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-amber-200 shadow-2xl transform transition-all space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-cute text-2xl text-stone-800">내 폰트 파일 적용하기 🔤</h3>
@@ -587,7 +606,7 @@
   </div>
 
   <!-- Backup / Reset Modal -->
-  <div id="backupModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div id="backupModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 modal-overlay">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 border-2 border-amber-200 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-cute text-2xl text-stone-800">백업 · 초기화 🗂️</h3>
@@ -676,7 +695,7 @@
       { key: 'food', label: '식비', emoji: '🍽️' },
       { key: 'transport', label: '교통', emoji: '🚗' },
       { key: 'stay', label: '숙소', emoji: '🏨' },
-      { key: 'tour', label: '관광·투어', emoji: '🏔️' },
+      { key: 'tour', label: '투어', emoji: '🏔️' },
       { key: 'shopping', label: '쇼핑', emoji: '🛍️' },
       { key: 'etc', label: '기타', emoji: '🧾' }
     ];
@@ -1130,7 +1149,7 @@
 
             <!-- 오른쪽: 시간 / 제목 / 메모 (나머지는 상세 팝업에서) -->
             <div class="flex-1 min-w-0 rounded-xl px-2 py-1.5 group-hover:bg-amber-50/60 group-active:bg-amber-50 transition ${isLast ? '' : 'mb-2.5'}">
-              <span class="block text-[11px] font-bold text-stone-400 leading-tight mb-0.5">${escapeHtml(timeText)}</span>
+              <span class="inline-block text-xs font-bold px-2 py-0.5 rounded-md mb-1 ${item.done ? 'text-stone-400 bg-stone-100' : 'text-amber-700 bg-amber-100/80'}">${escapeHtml(timeText)}</span>
               <h4 class="font-bold text-[15px] leading-snug break-keep break-words ${item.done ? 'line-through text-stone-400' : 'text-stone-800'}">${escapeHtml(item.title)}</h4>
               ${item.note ? `<p class="text-[13px] mt-0.5 whitespace-pre-line leading-relaxed break-keep break-words line-clamp-2 ${item.done ? 'text-stone-400' : 'text-stone-500'}">${escapeHtml(item.note)}</p>` : ''}
             </div>
@@ -1145,7 +1164,7 @@
     // 카테고리(아이콘)별 상세 항목 설정
     const CATEGORY_CONFIG = {
       '✈️': {
-        name: '항공', color: 'sky', timeLabels: ['출발 시간', '도착 시간'],
+        name: '항공', color: 'sky', timeLabels: ['출발 시간', '도착 시간'], extras: ['bookedVia', 'bookingRef'],
         fields: [
           { key: 'flightNo', label: '편명', placeholder: '예: KE071' },
           { key: 'seat', label: '좌석', placeholder: '예: 32A' },
@@ -1174,7 +1193,7 @@
         ]
       },
       '🚗': {
-        name: '교통', color: 'stone', timeLabels: ['출발 시간', '도착 시간 (선택)'],
+        name: '교통', color: 'stone', timeLabels: ['출발 시간', '도착 시간 (선택)'], extras: [],
         fields: [
           { key: 'stop', label: '정류장 / 타는 곳', placeholder: '예: 공항 1층 7번' },
           { key: 'dropOff', label: '내리는 곳', placeholder: '예: 밴프 다운타운' },
@@ -1192,7 +1211,7 @@
         ]
       },
       '🏔️': {
-        name: '관광', color: 'purple', timeLabels: ['시작 시간', '종료 시간 (선택)'],
+        name: '투어', color: 'purple', timeLabels: ['시작 시간', '종료 시간 (선택)'],
         fields: [
           { key: 'meetingPoint', label: '집결지', placeholder: '예: 호텔 로비' },
           { key: 'duration', label: '소요 시간', placeholder: '예: 약 3시간' },
@@ -1216,6 +1235,29 @@
 
     function getCategory(icon) {
       return CATEGORY_CONFIG[icon] || CATEGORY_CONFIG['📍'];
+    }
+
+    // 카테고리별로 보여줄 공통 칸 (장소 / 예약처 / 예약번호)
+    function getExtras(icon) {
+      return getCategory(icon).extras || ['place', 'bookingRef'];
+    }
+
+    // 2열 그리드에서 혼자 남는 칸이 생기지 않도록 넓이를 정해요
+    function balanceWide(items) {
+      let col = 0;
+      let lastHalf = null;
+      items.forEach(it => {
+        if (it.wide) {
+          if (col === 1 && lastHalf) lastHalf.wide = true;
+          col = 0;
+          lastHalf = null;
+        } else {
+          col = col === 0 ? 1 : 0;
+          lastHalf = col === 1 ? it : null;
+        }
+      });
+      if (col === 1 && lastHalf) lastHalf.wide = true;
+      return items;
     }
 
     function findPlan(id) {
@@ -1270,37 +1312,42 @@
       catEl.textContent = cat.name;
       catEl.className = `text-xs font-bold px-2 py-0.5 rounded-md ${c.badge}`;
 
-      // 시간 박스 (항공은 출발/도착으로)
-      const timeBoxes = item.endTime
-        ? infoBox(cat.timeLabels[0].replace(' (선택)', ''), escapeHtml(item.time), color) +
-          infoBox(cat.timeLabels[1].replace(' (선택)', ''), escapeHtml(item.endTime), color)
-        : infoBox(cat.timeLabels[0], escapeHtml(item.time), color, '', true);
+      // 상세 박스 목록 (2열에서 혼자 남는 칸은 자동으로 한 줄 전체)
+      const boxes = [];
+      if (item.endTime) {
+        boxes.push({ label: cat.timeLabels[0].replace(' (선택)', ''), value: escapeHtml(item.time), color });
+        boxes.push({ label: cat.timeLabels[1].replace(' (선택)', ''), value: escapeHtml(item.endTime), color });
+      } else {
+        boxes.push({ label: cat.timeLabels[0].replace(' (선택)', ''), value: escapeHtml(item.time), color });
+      }
 
       // 카테고리별 상세 항목 (입력한 것만)
-      const fieldBoxes = cat.fields
-        .filter(f => d[f.key])
-        .map(f => infoBox(f.label, escapeHtml(d[f.key]), color, '', f.wide))
-        .join('');
+      cat.fields.filter(f => d[f.key]).forEach(f => {
+        boxes.push({ label: f.label, value: escapeHtml(d[f.key]), color, wide: f.wide });
+      });
 
-      // 장소 / 예약번호
-      const bookingRef = getBookingRef(item);
-      let linkBoxes = '';
-      if (item.place) {
-        linkBoxes += infoBox('📍 장소', escapeHtml(item.place), 'sky',
-          `<button onclick="openMap(this.dataset.q)" data-q="${escapeHtml(item.place)}" class="flex-shrink-0 px-2.5 py-1 bg-white border border-sky-200 text-sky-700 rounded-lg text-[11px] font-bold btn-bounce">지도</button>`, true);
+      // 장소 / 예약처 / 예약번호 (카테고리에서 쓰는 칸만)
+      const extras = getExtras(item.icon);
+      const bookingRef = extras.includes('bookingRef') ? getBookingRef(item) : '';
+      if (extras.includes('place') && item.place) {
+        boxes.push({ label: '📍 장소', value: escapeHtml(item.place), color: 'sky', wide: true,
+          extra: `<button onclick="openMap(this.dataset.q)" data-q="${escapeHtml(item.place)}" class="flex-shrink-0 px-2.5 py-1 bg-white border border-sky-200 text-sky-700 rounded-lg text-[11px] font-bold btn-bounce">지도</button>` });
+      }
+      if (extras.includes('bookedVia') && item.bookedVia) {
+        boxes.push({ label: '🛒 예약처', value: escapeHtml(item.bookedVia), color: 'purple' });
       }
       if (bookingRef) {
-        linkBoxes += infoBox('🎫 예약번호', escapeHtml(bookingRef), 'purple',
-          `<button onclick="copyText(this.dataset.ref)" data-ref="${escapeHtml(bookingRef)}" class="flex-shrink-0 px-2.5 py-1 bg-white border border-purple-200 text-purple-700 rounded-lg text-[11px] font-bold btn-bounce">복사</button>`, true);
+        boxes.push({ label: '🎫 예약번호', value: escapeHtml(bookingRef), color: 'purple',
+          extra: `<button onclick="copyText(this.dataset.ref)" data-ref="${escapeHtml(bookingRef)}" class="flex-shrink-0 px-2.5 py-1 bg-white border border-purple-200 text-purple-700 rounded-lg text-[11px] font-bold btn-bounce">복사</button>` });
       }
 
       // 비용
       const expected = Number(item.cost) || 0;
       const actual = Number(item.actualCost) || 0;
-      let costBoxes = '';
-      if (expected > 0) costBoxes += infoBox('예상 비용', formatMoney(expected, currency, item.rate), 'amber');
-      if (actual > 0) costBoxes += infoBox('실제 비용', formatMoney(actual, currency, item.rate), 'rose');
-      if (costBoxes && !(expected > 0 && actual > 0)) costBoxes = costBoxes.replace('min-w-0 ', 'min-w-0 col-span-2 ');
+      if (expected > 0) boxes.push({ label: '예상 비용', value: formatMoney(expected, currency, item.rate), color: 'amber' });
+      if (actual > 0) boxes.push({ label: '실제 비용', value: formatMoney(actual, currency, item.rate), color: 'rose' });
+
+      const gridHtml = balanceWide(boxes).map(b => infoBox(b.label, b.value, b.color, b.extra || '', b.wide)).join('');
 
       document.getElementById('detailBody').innerHTML = `
         <div>
@@ -1308,10 +1355,7 @@
           ${item.done ? '<span class="inline-block mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">완료! ✔</span>' : ''}
         </div>
         <div class="grid grid-cols-2 gap-2.5">
-          ${timeBoxes}
-          ${fieldBoxes}
-          ${linkBoxes}
-          ${costBoxes}
+          ${gridHtml}
         </div>
         ${item.note ? `
           <div class="bg-stone-50/80 rounded-2xl p-3.5 border border-stone-200/70">
@@ -1371,6 +1415,16 @@
       document.getElementById('itemTimeLabel').textContent = cat.timeLabels[0];
       document.getElementById('itemEndTimeLabel').textContent = cat.timeLabels[1];
 
+      // 공통 칸 보이기/숨기기 (하나만 남으면 한 줄 전체로)
+      const extras = getExtras(icon);
+      const wraps = { place: 'placeWrap', bookedVia: 'bookedViaWrap', bookingRef: 'bookingRefWrap' };
+      Object.entries(wraps).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        el.classList.toggle('hidden', !extras.includes(key));
+        el.classList.toggle('col-span-2', extras.length === 1);
+      });
+      document.getElementById('extraFields').classList.toggle('hidden', extras.length === 0);
+
       const box = document.getElementById('categoryFieldsBox');
       if (!cat.fields.length) {
         box.classList.add('hidden');
@@ -1379,9 +1433,15 @@
       }
       box.classList.remove('hidden');
       document.getElementById('categoryFieldsTitle').textContent = `${icon} ${cat.name} 정보 (선택)`;
-      document.getElementById('categoryFields').innerHTML = cat.fields.map(f => `
+      // 작은 화면(폭 360px 미만)에서는 예시 문구의 '예: '를 빼서 잘리지 않게 해요
+      const isNarrow = window.innerWidth < 360;
+      const fieldItems = balanceWide(cat.fields.map(f => ({
+        ...f,
+        placeholder: f.placeholder && isNarrow ? f.placeholder.replace(/^예:\s*/, '') : f.placeholder
+      })));
+      document.getElementById('categoryFields').innerHTML = fieldItems.map(f => `
         <div class="min-w-0 ${f.wide ? 'col-span-2' : ''}">
-          <label class="block text-[11px] font-bold text-stone-500 mb-1">${f.label}</label>
+          <label class="flex items-center h-5 text-[11px] font-bold text-stone-500 mb-1">${f.label}</label>
           <input type="${f.type || 'text'}" data-field="${f.key}" value="${escapeHtml(editingDetails[f.key] || '')}"
             ${f.placeholder ? `placeholder="${escapeHtml(f.placeholder)}"` : ''}
             class="w-full h-[42px] bg-white border border-stone-200 rounded-xl px-3 text-sm text-left focus:outline-none focus:border-amber-400" />
@@ -1428,6 +1488,7 @@
         document.getElementById('itemNote').value = item.note || '';
         document.getElementById('itemPlace').value = item.place || '';
         document.getElementById('itemBookingRef').value = getBookingRef(item);
+        document.getElementById('itemBookedVia').value = item.bookedVia || '';
         setItemCurrency(item.currency || 'KRW');
         setSelectedIconUI(item.icon);
       } else {
@@ -1443,6 +1504,7 @@
         document.getElementById('itemNote').value = '';
         document.getElementById('itemPlace').value = '';
         document.getElementById('itemBookingRef').value = '';
+        document.getElementById('itemBookedVia').value = '';
         setItemCurrency('CAD');
         setSelectedIconUI('📍');
       }
@@ -1454,7 +1516,7 @@
       document.getElementById('itemCurrency').value = currency;
       document.querySelectorAll('.currency-btn').forEach(b => {
         const on = b.dataset.currency === currency;
-        b.className = `currency-btn px-3 py-1 rounded-lg ${on ? 'bg-white text-amber-800 shadow-sm' : 'text-stone-400'}`;
+        b.className = `currency-btn px-3 py-1 rounded-lg ${on ? 'bg-emerald-500 text-white shadow-sm' : 'text-stone-400'}`;
       });
       document.querySelectorAll('.currency-label').forEach(l => {
         l.textContent = currency === 'CAD' ? '(CAD)' : '(원)';
@@ -1466,13 +1528,14 @@
     function updateCostPreview() {
       const currency = document.getElementById('itemCurrency').value;
       const preview = document.getElementById('itemCostPreview');
-      if (currency !== 'CAD') { preview.textContent = ''; return; }
+      if (currency !== 'CAD') { preview.textContent = ''; preview.classList.add('hidden'); return; }
       const exp = Number(document.getElementById('itemCost').value) || 0;
       const act = Number(document.getElementById('itemActualCost').value) || 0;
       const parts = [];
       if (exp > 0) parts.push(`예상 ≈${toKRW(exp, 'CAD').toLocaleString()}원`);
       if (act > 0) parts.push(`실제 ≈${toKRW(act, 'CAD').toLocaleString()}원`);
       preview.textContent = parts.length ? `💱 ${parts.join(' · ')} (1 CAD = ${state.exchangeRate.toLocaleString()}원)` : '';
+      preview.classList.toggle('hidden', !parts.length);
     }
 
     function closeScheduleModal() {
@@ -1496,8 +1559,11 @@
       const actualCost = Number(document.getElementById('itemActualCost').value) || 0;
       const title = document.getElementById('itemTitle').value.trim();
       const note = document.getElementById('itemNote').value.trim();
-      const place = document.getElementById('itemPlace').value.trim();
-      const bookingRef = document.getElementById('itemBookingRef').value.trim();
+      // 이 카테고리에서 보이는 칸만 저장해요
+      const extras = getExtras(selectedIcon);
+      const place = extras.includes('place') ? document.getElementById('itemPlace').value.trim() : '';
+      const bookedVia = extras.includes('bookedVia') ? document.getElementById('itemBookedVia').value.trim() : '';
+      const bookingRef = extras.includes('bookingRef') ? document.getElementById('itemBookingRef').value.trim() : '';
       const currency = document.getElementById('itemCurrency').value === 'CAD' ? 'CAD' : 'KRW';
       if (!title) return;
 
@@ -1524,14 +1590,14 @@
         const rate = currency === 'CAD' ? (sameAmount && target.rate ? target.rate : state.exchangeRate) : null;
         Object.assign(target, {
           time, endTime, cost, actualCost, icon: selectedIcon,
-          title, note, place, bookingRef, currency, rate, details
+          title, note, place, bookedVia, bookingRef, currency, rate, details
         });
         showToast('일정이 수정되었어요!');
       } else {
         plans.push({
           id: Date.now(),
           time, endTime, cost, actualCost, icon: selectedIcon,
-          title, note, place, bookingRef, currency,
+          title, note, place, bookedVia, bookingRef, currency,
           rate: currency === 'CAD' ? state.exchangeRate : null,
           details,
           done: false
@@ -2126,10 +2192,34 @@
       });
     }
 
+    // 팝업이 열려 있는 동안 뒤 화면을 고정해요 (아이폰에서 뒤 화면이 같이 스크롤되는 문제 방지)
+    let lockedScrollY = 0;
+    function updateBodyLock() {
+      const anyOpen = [...document.querySelectorAll('.modal-overlay')].some(m => !m.classList.contains('hidden'));
+      const body = document.body;
+      if (anyOpen && !body.classList.contains('modal-locked')) {
+        lockedScrollY = window.scrollY;
+        body.style.top = `-${lockedScrollY}px`;
+        body.classList.add('modal-locked');
+      } else if (!anyOpen && body.classList.contains('modal-locked')) {
+        body.classList.remove('modal-locked');
+        body.style.top = '';
+        window.scrollTo(0, lockedScrollY);
+      }
+    }
+
+    function setupModalLock() {
+      const observer = new MutationObserver(updateBodyLock);
+      document.querySelectorAll('.modal-overlay').forEach(m =>
+        observer.observe(m, { attributes: true, attributeFilter: ['class'] })
+      );
+    }
+
     // Initialize App
     document.addEventListener('DOMContentLoaded', () => {
       renderAll();
       setupIconSelector();
+      setupModalLock();
       loadSavedFont();
       updateNetBanner();
       updateOfflineButton();
