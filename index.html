@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="캐나다 여행" />
   <meta name="theme-color" content="#FEF3C7" />
-  <link rel="manifest" id="pwa-manifest" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <title>2027 캐나다 신혼여행 플래너 🍁❄️</title>
 
   <!-- Tailwind CSS -->
@@ -116,17 +116,17 @@
 
   <!-- Top Cute Header Banner -->
   <header class="bg-gradient-to-r from-amber-100 via-orange-100 to-rose-100 border-b-2 border-amber-200/60 sticky top-0 z-30 backdrop-blur-md bg-opacity-90">
-    <div class="max-w-3xl mx-auto px-3.5 sm:px-4 py-3 sm:py-3.5 flex items-start justify-between gap-2">
-      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-        <button onclick="openTripModal()" title="여행 정보 수정" class="w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-sm border border-amber-200 flex-shrink-0 btn-bounce">
+    <div class="max-w-3xl mx-auto px-4 sm:px-5 py-4 sm:py-5 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+        <button onclick="openTripModal()" title="여행 정보 수정" class="w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-sm border border-amber-200 flex-shrink-0 btn-bounce">
           <span id="tripEmoji">🍁</span>
         </button>
         <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap mb-1">
+          <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap mb-1.5">
             <span id="tripDateBadge" class="inline-flex items-center px-2 sm:px-2.5 py-0.5 bg-rose-500 text-white text-[10px] sm:text-[11px] font-bold rounded-full whitespace-nowrap tracking-tight">2027.03.01 ~ 03.12 (11박 12일)</span>
             <span id="ddayBadge" class="inline-flex items-center px-2 py-0.5 bg-amber-300/90 text-amber-950 text-[10px] sm:text-[11px] font-bold rounded-full whitespace-nowrap flex-shrink-0">D-104</span>
           </div>
-          <h1 id="tripTitle" onclick="openTripModal()" class="font-cute text-lg sm:text-2xl text-stone-800 tracking-wide break-keep break-words cursor-pointer leading-snug">
+          <h1 id="tripTitle" onclick="openTripModal()" class="font-cute text-xl sm:text-2xl text-stone-800 tracking-wide break-keep break-words cursor-pointer leading-snug">
             캐나다 신혼여행 플래너 🇨🇦🍁
           </h1>
         </div>
@@ -624,28 +624,7 @@
   </div>
 
   <script>
-    // PWA Manifest & Icon
-    (function setupPWA() {
-      const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="#FDE68A"/><text x="50" y="66" font-size="54" text-anchor="middle">🍁</text></svg>`;
-      const iconUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgIcon)));
-
-      const appleIcon = document.createElement('link');
-      appleIcon.rel = 'apple-touch-icon';
-      appleIcon.href = iconUrl;
-      document.head.appendChild(appleIcon);
-
-      const manifest = {
-        name: "2027 캐나다 신혼여행 플래너",
-        short_name: "캐나다여행",
-        start_url: ".",
-        display: "standalone",
-        background_color: "#FFFDF9",
-        theme_color: "#FEF3C7",
-        icons: [{ src: iconUrl, sizes: "192x192", type: "image/svg+xml" }]
-      };
-      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
-    })();
+    // 아이폰 홈 화면 아이콘은 apple-touch-icon.png, 이름은 apple-mobile-web-app-title에서 불러와요.
 
     // IndexedDB Helper for Local Custom Font
     const FontDB = {
@@ -719,15 +698,17 @@
       return s;
     }
 
-    function toKRW(amount, currency) {
+    // rate: 그 금액을 기록할 때의 환율 (없으면 현재 환율)
+    function toKRW(amount, currency, rate) {
       const n = Number(amount) || 0;
-      return currency === 'CAD' ? Math.round(n * state.exchangeRate) : Math.round(n);
+      const r = Number(rate) > 0 ? Number(rate) : state.exchangeRate;
+      return currency === 'CAD' ? Math.round(n * r) : Math.round(n);
     }
 
-    function formatMoney(amount, currency) {
+    function formatMoney(amount, currency, rate) {
       const n = Number(amount) || 0;
       if (currency === 'CAD') {
-        return `C$${n.toLocaleString('en-CA', { maximumFractionDigits: 2 })} (≈${toKRW(n, 'CAD').toLocaleString()}원)`;
+        return `C$${n.toLocaleString('en-CA', { maximumFractionDigits: 2 })} (≈${toKRW(n, 'CAD', rate).toLocaleString()}원)`;
       }
       return `${Math.round(n).toLocaleString()}원`;
     }
@@ -737,13 +718,14 @@
       const currency = p.currency || 'KRW';
       const actual = Number(p.actualCost) || 0;
       const expected = Number(p.cost) || 0;
-      if (actual > 0) return { amount: actual, currency, krw: toKRW(actual, currency), isActual: true };
-      if (expected > 0) return { amount: expected, currency, krw: toKRW(expected, currency), isActual: false };
+      if (actual > 0) return { amount: actual, currency, rate: p.rate, krw: toKRW(actual, currency, p.rate), isActual: true };
+      if (expected > 0) return { amount: expected, currency, rate: p.rate, krw: toKRW(expected, currency, p.rate), isActual: false };
       return null;
     }
 
     function getBookingRef(item) {
-      if (item.bookingRef) return item.bookingRef;
+      // 한 번이라도 예약번호 칸을 저장했다면(빈칸 포함) 그 값을 그대로 써요
+      if (typeof item.bookingRef === 'string') return item.bookingRef;
       const m = (item.note || '').match(/예약\s*번호\s*[:：]\s*([A-Za-z0-9-]+)/);
       return m ? m[1] : '';
     }
@@ -995,7 +977,8 @@
       const toast = document.getElementById('toast');
       document.getElementById('toastMsg').innerText = msg;
       toast.classList.remove('opacity-0');
-      setTimeout(() => toast.classList.add('opacity-0'), 2200);
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.add('opacity-0'), 2200);
     }
 
     // Header Rendering
@@ -1323,8 +1306,8 @@
       const expected = Number(item.cost) || 0;
       const actual = Number(item.actualCost) || 0;
       let costBoxes = '';
-      if (expected > 0) costBoxes += infoBox('예상 비용', formatMoney(expected, currency), 'amber');
-      if (actual > 0) costBoxes += infoBox('실제 비용', formatMoney(actual, currency), 'rose');
+      if (expected > 0) costBoxes += infoBox('예상 비용', formatMoney(expected, currency, item.rate), 'amber');
+      if (actual > 0) costBoxes += infoBox('실제 비용', formatMoney(actual, currency, item.rate), 'rose');
       if (costBoxes && !(expected > 0 && actual > 0)) costBoxes = costBoxes.replace('min-w-0 ', 'min-w-0 col-span-2 ');
 
       document.getElementById('detailBody').innerHTML = `
@@ -1452,7 +1435,7 @@
         document.getElementById('itemTitle').value = item.title;
         document.getElementById('itemNote').value = item.note || '';
         document.getElementById('itemPlace').value = item.place || '';
-        document.getElementById('itemBookingRef').value = item.bookingRef || '';
+        document.getElementById('itemBookingRef').value = getBookingRef(item);
         setItemCurrency(item.currency || 'KRW');
         setSelectedIconUI(item.icon);
       } else {
@@ -1536,18 +1519,29 @@
       const plans = state.days[state.activeDayIndex].plans;
       if (editId) {
         const target = plans.find(i => String(i.id) === String(editId));
-        if (target) {
-          Object.assign(target, {
-            time, endTime, cost, actualCost, icon: selectedIcon,
-            title, note, place, bookingRef, currency, details
-          });
+        if (!target) {
+          // 그사이 다른 기기에서 삭제된 일정이에요
+          returnToDetailId = null;
+          closeScheduleModal();
+          renderSelectedDay();
+          showToast('다른 기기에서 삭제된 일정이라 저장하지 못했어요.');
+          return;
         }
+        // 금액이 그대로면 처음 기록할 때의 환율을 유지해요
+        const sameAmount = target.currency === currency && Number(target.cost) === cost && Number(target.actualCost || 0) === actualCost;
+        const rate = currency === 'CAD' ? (sameAmount && target.rate ? target.rate : state.exchangeRate) : null;
+        Object.assign(target, {
+          time, endTime, cost, actualCost, icon: selectedIcon,
+          title, note, place, bookingRef, currency, rate, details
+        });
         showToast('일정이 수정되었어요!');
       } else {
         plans.push({
           id: Date.now(),
           time, endTime, cost, actualCost, icon: selectedIcon,
-          title, note, place, bookingRef, currency, details,
+          title, note, place, bookingRef, currency,
+          rate: currency === 'CAD' ? state.exchangeRate : null,
+          details,
           done: false
         });
         showToast('새 일정이 추가되었어요!');
@@ -1806,19 +1800,19 @@
           if (c.isActual) actualKRW += c.krw; else expectedKRW += c.krw;
           items.push({
             kind: 'plan', day: idx, icon: p.icon, title: p.title, time: p.time || '',
-            amount: c.amount, currency: c.currency, krw: c.krw, isActual: c.isActual,
+            amount: c.amount, currency: c.currency, rate: c.rate, krw: c.krw, isActual: c.isActual,
             category: ICON_CATEGORY[p.icon] || 'etc'
           });
         });
       });
 
       state.expenses.forEach(e => {
-        const krw = toKRW(e.amount, e.currency);
+        const krw = toKRW(e.amount, e.currency, e.rate);
         actualKRW += krw;
         const cat = CATEGORIES.find(c => c.key === e.category) || CATEGORIES[CATEGORIES.length - 1];
         items.push({
           kind: 'expense', id: e.id, day: e.dayIndex, icon: cat.emoji, title: e.title, time: '99:99',
-          amount: e.amount, currency: e.currency, krw, isActual: true, category: cat.key
+          amount: e.amount, currency: e.currency, rate: e.rate, krw, isActual: true, category: cat.key
         });
       });
 
@@ -1867,7 +1861,7 @@
               <strong class="text-amber-700">[DAY ${item.day + 1}]</strong> ${item.icon} ${escapeHtml(item.title)}
             </div>
             <div class="text-[11px] ${item.isActual ? 'text-rose-500' : 'text-amber-700'}">
-              ${item.kind === 'expense' ? '기타 지출' : (item.isActual ? '실제' : '예상')} · ${formatMoney(item.amount, item.currency)}
+              ${item.kind === 'expense' ? '기타 지출' : (item.isActual ? '실제' : '예상')} · ${formatMoney(item.amount, item.currency, item.rate)}
             </div>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
@@ -1890,7 +1884,8 @@
         category: document.getElementById('expCategory').value || 'etc',
         title,
         amount,
-        currency: document.getElementById('expCurrency').value === 'KRW' ? 'KRW' : 'CAD'
+        currency: document.getElementById('expCurrency').value === 'KRW' ? 'KRW' : 'CAD',
+        rate: state.exchangeRate
       });
       document.getElementById('expTitle').value = '';
       document.getElementById('expAmount').value = '';
@@ -1929,7 +1924,7 @@
       saveState();
       renderBudget();
       renderSelectedDay();
-      showToast('환율이 바뀌었어요! CAD 금액이 모두 다시 계산돼요.');
+      showToast('환율이 바뀌었어요! 앞으로 기록하는 CAD 금액에 적용돼요.');
     }
     // Custom Font Modals & Logic
     function openFontModal() {
@@ -2156,11 +2151,12 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
   import {
-    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+    getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+    signOut, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    doc, setDoc, onSnapshot, serverTimestamp
+    doc, setDoc, updateDoc, onSnapshot, serverTimestamp, deleteField, FieldPath
   } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -2198,6 +2194,165 @@
   let cloudReady = false;
   let saveTimer = null;
 
+  // ===================================================================
+  // 항목 단위 동기화
+  // 일정·준비물·지출을 하나씩 따로 저장해서, 두 사람이 동시에 다른 항목을
+  // 고쳐도 서로의 수정이 사라지지 않아요. (같은 항목을 동시에 고치면 나중 것이 남아요)
+  // ===================================================================
+  const SCHEMA = 2;
+  let base = null; // 마지막으로 확인한 서버 상태 (경로 → 값)
+
+  function toCloudShape(st) {
+    const s = JSON.parse(JSON.stringify(st)); // undefined 값 제거 (Firestore는 undefined 저장 불가)
+    const days = {};
+    s.days.forEach((d, i) => {
+      const plans = {};
+      (d.plans || []).forEach(p => { plans["p" + p.id] = p; });
+      days["d" + i] = { stayColor: d.stayColor || "amber", summary: d.summary || {}, plans };
+    });
+    const checklist = {};
+    (s.checklist || []).forEach(m => { checklist["c" + m.id] = m; });
+    const expenses = {};
+    (s.expenses || []).forEach(e => { expenses["e" + e.id] = e; });
+    return {
+      meta: {
+        tripTitle: s.tripTitle, tripDate: s.tripDate, tripEmoji: s.tripEmoji,
+        totalBudget: s.totalBudget, exchangeRate: s.exchangeRate, members: s.members,
+        dayCount: s.days.length
+      },
+      days, checklist, expenses
+    };
+  }
+
+  function fromCloudShape(c) {
+    const meta = c.meta || {};
+    const dayCount = meta.dayCount || Object.keys(c.days || {}).length;
+    const days = [];
+    for (let i = 0; i < dayCount; i++) {
+      const d = (c.days || {})["d" + i] || {};
+      days.push({
+        stayColor: d.stayColor || "amber",
+        summary: d.summary && Object.keys(d.summary).length ? d.summary : { region: "미정", transport: "없음", tour: "없음", hotel: "미정" },
+        plans: Object.values(d.plans || {})
+      });
+    }
+    return {
+      tripTitle: meta.tripTitle, tripDate: meta.tripDate, tripEmoji: meta.tripEmoji,
+      totalBudget: meta.totalBudget, exchangeRate: meta.exchangeRate, members: meta.members,
+      days,
+      checklist: Object.values(c.checklist || {}).sort((a, b) => a.id - b.id),
+      expenses: Object.values(c.expenses || {}).sort((a, b) => a.id - b.id)
+    };
+  }
+
+  // 키 순서와 상관없이 같은 값인지 비교하기 위한 문자열
+  function stable(v) {
+    if (Array.isArray(v)) return "[" + v.map(stable).join(",") + "]";
+    if (v && typeof v === "object") {
+      return "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + stable(v[k])).join(",") + "}";
+    }
+    return JSON.stringify(v === undefined ? null : v);
+  }
+
+  // 저장 단위: meta의 각 값, 날짜별 요약/색, 일정 1개, 준비물 1개, 지출 1개
+  function flatten(c) {
+    const out = {};
+    Object.entries(c.meta || {}).forEach(([k, v]) => { out["meta/" + k] = v; });
+    Object.entries(c.days || {}).forEach(([dk, d]) => {
+      out[`days/${dk}/stayColor`] = d.stayColor;
+      out[`days/${dk}/summary`] = d.summary;
+      Object.entries(d.plans || {}).forEach(([pk, p]) => { out[`days/${dk}/plans/${pk}`] = p; });
+    });
+    Object.entries(c.checklist || {}).forEach(([k, v]) => { out["checklist/" + k] = v; });
+    Object.entries(c.expenses || {}).forEach(([k, v]) => { out["expenses/" + k] = v; });
+    return out;
+  }
+
+  function unflatten(flat) {
+    const c = { meta: {}, days: {}, checklist: {}, expenses: {} };
+    Object.entries(flat).forEach(([path, v]) => {
+      const parts = path.split("/");
+      let cur = c;
+      for (let i = 0; i < parts.length - 1; i++) {
+        cur[parts[i]] = cur[parts[i]] || {};
+        cur = cur[parts[i]];
+      }
+      cur[parts[parts.length - 1]] = v;
+    });
+    return c;
+  }
+
+  function diff(from, to) {
+    const sets = {};
+    const dels = [];
+    Object.keys(to).forEach(k => { if (!(k in from) || stable(from[k]) !== stable(to[k])) sets[k] = to[k]; });
+    Object.keys(from).forEach(k => { if (!(k in to)) dels.push(k); });
+    return { sets, dels, empty: !Object.keys(sets).length && !dels.length };
+  }
+
+  function applyPatch(flat, patch) {
+    const out = { ...flat };
+    Object.entries(patch.sets).forEach(([k, v]) => { out[k] = v; });
+    patch.dels.forEach(k => { delete out[k]; });
+    return out;
+  }
+
+  function localFlat() {
+    return flatten(toCloudShape(window.getCurrentTripState()));
+  }
+
+  function serverDocFromState(st) {
+    return {
+      schema: SCHEMA,
+      ...toCloudShape(st),
+      state: JSON.parse(JSON.stringify(st)), // 예전 버전 앱과의 호환용 전체 사본
+      updatedAt: serverTimestamp()
+    };
+  }
+
+  async function sendPendingChanges() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    if (!cloudReady || !currentUser || offlineViewMode || !base) return;
+
+    const now = localFlat();
+    const patch = diff(base, now);
+    if (patch.empty) return;
+
+    const args = [];
+    Object.entries(patch.sets).forEach(([k, v]) => { args.push(new FieldPath(...k.split("/")), v); });
+    patch.dels.forEach(k => { args.push(new FieldPath(...k.split("/")), deleteField()); });
+    args.push("state", JSON.parse(JSON.stringify(window.getCurrentTripState())));
+    args.push("updatedAt", serverTimestamp());
+
+    base = applyPatch(base, patch); // 같은 변경을 두 번 보내지 않도록
+    try {
+      await updateDoc(sharedTripRef, ...args);
+      authStatus.textContent = currentUser.email + " · 동기화 완료";
+    } catch (error) {
+      console.error("Firestore 저장 오류:", error);
+      showToast("클라우드 저장에 실패했어요: " + (error.code || "알 수 없는 오류"));
+      authStatus.textContent = "클라우드 저장 실패: " + error.code;
+    }
+  }
+
+  // 기존 앱의 saveState()가 호출하면 잠시 모았다가 바뀐 항목만 저장해요.
+  window.saveTripStateToCloud = () => {
+    if (!cloudReady || !currentUser || offlineViewMode) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(sendPendingChanges, 400);
+  };
+
+  // 앱을 내리거나 닫을 때는 기다리지 않고 바로 저장해요. (수정 직후 앱을 꺼도 안전)
+  // 오프라인이어도 기기에 대기열로 저장되어 다음에 연결될 때 올라가요.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && saveTimer) sendPendingChanges();
+  });
+  window.addEventListener("pagehide", () => { if (saveTimer) sendPendingChanges(); });
+
+  // ===================================================================
+  // 로그인
+  // ===================================================================
   function showLogin(message) {
     cloudReady = false;
     document.body.classList.add("auth-locked");
@@ -2212,6 +2367,12 @@
     updateNetBanner();
   }
 
+  // 홈 화면 앱처럼 팝업이 막히는 환경에서는 페이지 이동 방식으로 로그인해요.
+  getRedirectResult(auth).catch((error) => {
+    console.error("리다이렉트 로그인 오류:", error);
+    authStatus.textContent = "로그인 실패: " + (error.code || error.message);
+  });
+
   loginButton.addEventListener("click", async () => {
     authStatus.textContent = "Google 로그인 창을 여는 중...";
     loginButton.disabled = true;
@@ -2219,7 +2380,25 @@
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("로그인 오류:", error);
-      authStatus.textContent = "로그인 실패: " + (error.message || error.code);
+      const fallbackCodes = [
+        "auth/popup-blocked",
+        "auth/operation-not-supported-in-this-environment",
+        "auth/web-storage-unsupported"
+      ];
+      if (fallbackCodes.includes(error.code)) {
+        authStatus.textContent = "Google 로그인 페이지로 이동하는 중...";
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (e2) {
+          console.error("리다이렉트 로그인 오류:", e2);
+          authStatus.textContent = "로그인 실패: " + (e2.code || e2.message);
+        }
+      } else if (error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
+        authStatus.textContent = "로그인 창이 닫혔어요. 다시 눌러 주세요.";
+      } else {
+        authStatus.textContent = "로그인 실패: " + (error.code || error.message);
+      }
     } finally {
       loginButton.disabled = false;
     }
@@ -2227,6 +2406,7 @@
 
   logoutButton.addEventListener("click", async () => {
     try {
+      if (saveTimer) await sendPendingChanges();
       await signOut(auth);
     } catch (error) {
       console.error("로그아웃 오류:", error);
@@ -2234,34 +2414,17 @@
     }
   });
 
-  // 기존 앱의 saveState()가 호출하면 600ms 후 Firestore에 저장합니다.
-  window.saveTripStateToCloud = (nextState) => {
-    if (!cloudReady || !currentUser || offlineViewMode) return;
-
-    clearTimeout(saveTimer);
-    const stateCopy = JSON.parse(JSON.stringify(nextState));
-
-    saveTimer = setTimeout(async () => {
-      try {
-        await setDoc(sharedTripRef, {
-          state: stateCopy,
-          updatedAt: serverTimestamp()
-        });
-        authStatus.textContent = currentUser.email + " · 동기화 완료";
-      } catch (error) {
-        console.error("Firestore 저장 오류:", error);
-        showToast("클라우드 저장에 실패했어요: " + (error.code || "알 수 없는 오류"));
-        authStatus.textContent = "클라우드 저장 실패: " + error.code;
-      }
-    }, 600);
-  };
-
+  // ===================================================================
+  // 데이터 받기
+  // ===================================================================
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
     unsubscribeTrip?.();
     unsubscribeTrip = null;
     cloudReady = false;
+    base = null;
     clearTimeout(saveTimer);
+    saveTimer = null;
 
     if (!user) {
       signedInEmail.textContent = "";
@@ -2275,33 +2438,55 @@
     unsubscribeTrip = onSnapshot(
       sharedTripRef,
       async (snapshot) => {
-        // 화면이 열린 뒤에는, 내가 방금 보낸 쓰기 이벤트를 건너뜁니다.
-        // (처음 열 때는 오프라인에서 남은 수정이 있어도 화면을 열어야 하므로 건너뛰지 않아요)
-        if (cloudReady && snapshot.metadata.hasPendingWrites) return;
-
         try {
-          if (snapshot.exists() && snapshot.data().state) {
-            window.applyCloudTripState(snapshot.data().state);
-          } else if (snapshot.metadata.fromCache) {
-            // 오프라인이라 서버 데이터를 확인할 수 없어요. 공용 데이터를 덮어쓰지 않도록
-            // 이 기기의 데이터로 보기만 하고, 연결되면 서버 데이터를 다시 받아요.
-            offlineViewMode = true;
-            renderAll();
-            showPlanner();
-            authStatus.textContent = "오프라인 · 서버 연결을 기다리는 중";
-            return;
+          const data = snapshot.exists() ? snapshot.data() : null;
+
+          if (!data) {
+            if (snapshot.metadata.fromCache) {
+              // 오프라인이라 서버 데이터를 확인할 수 없어요. 공용 데이터를 덮어쓰지 않도록
+              // 이 기기의 데이터로 보기만 하고, 연결되면 서버 데이터를 다시 받아요.
+              offlineViewMode = true;
+              renderAll();
+              showPlanner();
+              authStatus.textContent = "오프라인 · 서버 연결을 기다리는 중";
+              return;
+            }
+            // 공용 문서가 처음 만들어지는 경우: 이 기기의 데이터로 만들어요.
+            await setDoc(sharedTripRef, serverDocFromState(window.getCurrentTripState()));
+            base = localFlat();
+          } else if (data.schema !== SCHEMA) {
+            // 예전 방식(통째 저장) 문서 → 항목 단위 방식으로 한 번 바꿔요.
+            // (예전 버전 앱이 다시 통째로 저장한 경우에도 여기로 와서 최신 내용으로 바뀌어요)
+            if (!data.state || !Array.isArray(data.state.days)) throw new Error("데이터 형식을 알 수 없어요.");
+            const migrated = ensureStateShape(JSON.parse(JSON.stringify(data.state)));
+            await setDoc(sharedTripRef, serverDocFromState(migrated));
+            base = flatten(toCloudShape(migrated));
+            window.applyCloudTripState(migrated);
           } else {
-            // 공용 문서가 처음 만들어지는 경우 현재 기기의 저장 데이터를 초기값으로 사용합니다.
-            await setDoc(sharedTripRef, {
-              state: JSON.parse(JSON.stringify(window.getCurrentTripState())),
-              updatedAt: serverTimestamp()
-            });
-            // 저장 후 알림이 다시 오지 않을 수 있으므로 여기서 바로 화면을 엽니다.
+            const serverFlat = flatten(data);
+            if (base === null) {
+              // 처음 받은 데이터를 그대로 보여줘요.
+              base = serverFlat;
+              window.applyCloudTripState(fromCloudShape(data));
+            } else {
+              // 아직 보내지 않은 내 수정은 유지한 채, 상대방 수정을 합쳐요.
+              const mine = localFlat();
+              const unsent = diff(base, mine);
+              const merged = applyPatch(serverFlat, unsent);
+              base = serverFlat;
+              // 화면과 달라진 게 있을 때만 다시 그려요 (불필요한 깜빡임 방지)
+              if (!diff(mine, merged).empty) {
+                window.applyCloudTripState(fromCloudShape(unflatten(merged)));
+              }
+              if (!unsent.empty) window.saveTripStateToCloud();
+            }
           }
 
-          offlineViewMode = false;
-          cloudReady = true;
-          showPlanner();
+          if (!cloudReady) {
+            offlineViewMode = false;
+            cloudReady = true;
+            showPlanner();
+          }
           authStatus.textContent = user.email + " · 동기화 완료";
         } catch (error) {
           console.error("여행 데이터 초기화 오류:", error);
